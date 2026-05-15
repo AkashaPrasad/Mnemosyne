@@ -16,3 +16,4 @@ htmlcov/
 report.json
 .env
 .DS_Store
+.claude

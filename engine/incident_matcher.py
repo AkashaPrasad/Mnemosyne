@@ -12,10 +12,13 @@ Similarity dimensions and weights:
 """
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+_log = logging.getLogger("mnemosyne.matcher")
 
 from .ingestion import EpisodicStore, _parse_ts
 from .memory_substrate import TemporalCausalGraph
@@ -162,6 +165,10 @@ class IncidentMemory:
         mode: str = "fast",
         window_minutes: int = 15,
     ) -> List[IncidentMatch]:
+        _log.debug(
+            "match called: trigger=%s ts=%s stored_fingerprints=%d",
+            trigger_canonical, incident_ts, len(self._fingerprints),
+        )
         if not self._fingerprints:
             return []
 
@@ -180,6 +187,10 @@ class IncidentMemory:
                 scored.append((sim, fp))
 
         scored.sort(key=lambda x: -x[0])
+        _log.debug(
+            "match results: %d candidates, top scores: %s",
+            len(scored), [round(s, 3) for s, _ in scored[:5]],
+        )
         results = []
         for sim, fp in scored[:top_k]:
             current_name = self.topology.current_name(trigger_canonical) or trigger_canonical

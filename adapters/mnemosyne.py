@@ -11,8 +11,11 @@ Three public methods:
 """
 from __future__ import annotations
 
+import logging
 import sys
 import os
+
+_log = logging.getLogger("mnemosyne")
 
 # Allow running from the bench-p02-context directory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -184,9 +187,14 @@ class Engine:
             trigger_cid = canonical_id
             inc_ts = ts
 
-        self.incident_memory.extract_and_store(
+        fp = self.incident_memory.extract_and_store(
             incident_id=incident_id,
             trigger_canonical=trigger_cid,
             incident_ts=inc_ts,
             remediation_event=dict(event),
+        )
+        _log.debug(
+            "fingerprint stored: incident=%s trigger=%s had_deploy=%s errors=%s metrics=%s action=%s",
+            incident_id, trigger_cid, fp.had_pre_deploy,
+            fp.error_role_sequence, fp.anomalous_metrics, fp.resolution_action,
         )
