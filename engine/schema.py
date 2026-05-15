@@ -59,7 +59,7 @@ class CausalEdge(TypedDict):
 
 
 class IncidentMatch(TypedDict):
-    past_incident_id: str
+    incident_id: str
     similarity: float
     rationale: str
 

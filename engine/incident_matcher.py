@@ -184,7 +184,7 @@ class IncidentMemory:
             rationale = _build_rationale(current_fp, fp, sim, current_name, self.topology)
             results.append(
                 IncidentMatch(
-                    past_incident_id=fp.incident_id,
+                    incident_id=fp.incident_id,
                     similarity=round(sim, 3),
                     rationale=rationale,
                 )

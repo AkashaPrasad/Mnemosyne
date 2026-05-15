@@ -182,7 +182,7 @@ class ContextCompiler:
         if similar_past:
             top_match = similar_past[0]
             lines.append(
-                f"Resembles past incident {top_match['past_incident_id']} "
+                f"Resembles past incident {top_match['incident_id']} "
                 f"({top_match['similarity']:.0%} similarity). "
                 + top_match["rationale"]
             )

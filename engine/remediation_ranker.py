@@ -40,7 +40,7 @@ class RemediationRanker:
         candidates: List[Dict[str, Any]] = []
 
         for match in similar_incidents:
-            fp = self.memory.get(match["past_incident_id"])
+            fp = self.memory.get(match["incident_id"])
             if fp is None or fp.raw_remediation is None:
                 continue
 
