@@ -93,6 +93,9 @@ class IncidentMemory:
         window_minutes: int,
     ) -> BehavioralFingerprint:
         window_start = incident_ts - timedelta(minutes=window_minutes)
+        # Extend deploy lookback to 45 min — incidents consistently have a
+        # pre-incident deploy ~30 min before which falls outside the 15-min window.
+        deploy_window_start = incident_ts - timedelta(minutes=max(window_minutes, 45))
 
         # Collect involved services (trigger + 2-hop)
         involved = {trigger_canonical}
@@ -105,7 +108,7 @@ class IncidentMemory:
 
         # ── Deploy pattern ────────────────────────────────────────────────
         deploys = self.store.events_in_window(
-            window_start, incident_ts, canonical_ids=list(involved), kinds=["deploy"]
+            deploy_window_start, incident_ts, canonical_ids=list(involved), kinds=["deploy"]
         )
         if deploys:
             earliest = min(deploys, key=lambda e: e.get("_ts_parsed", incident_ts))
