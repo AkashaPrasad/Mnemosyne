@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  mnemosyne:
+    build: .
+    volumes:
+      - .:/app
+      - ../Anvil-P-E:/bench-repo
+    environment:
+      - PYTHONPATH=/app
+      - BENCH_REPO=/bench-repo
+    command: python -m pytest tests/ -v --tb=short
+
+  bench:
+    build: .
+    volumes:
+      - .:/app
+      - ../Anvil-P-E:/bench-repo
+    environment:
+      - PYTHONPATH=/app
+      - BENCH_REPO=/bench-repo
+    command: bash bench/run.sh
