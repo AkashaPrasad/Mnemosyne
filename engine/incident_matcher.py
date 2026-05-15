@@ -134,7 +134,7 @@ class IncidentMemory:
             window_start, incident_ts, canonical_ids=[trigger_canonical], kinds=["metric"]
         )
         fp.anomalous_metrics = sorted({
-            e.get("metric", "") for e in metric_events if e.get("_anomalous")
+            e.get("metric") or e.get("name", "") for e in metric_events if e.get("_anomalous")
         })
 
         # ── Resolution pattern ────────────────────────────────────────────

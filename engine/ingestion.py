@@ -151,7 +151,8 @@ class EpisodicStore:
 
         # Kind-specific side effects
         if kind == "metric":
-            name = event.get("metric", "unknown")
+            # Generator uses "name"; internal events may use "metric"
+            name = event.get("metric") or event.get("name", "unknown")
             val = event.get("value", 0.0)
             series = self._metric_series[(canonical_id, name)]
             event["_anomalous"] = series.is_anomalous(val)
