@@ -65,7 +65,15 @@ class Engine:
         Process a stream of telemetry events.
         Updates episodic store, semantic graph, and incident memory.
         """
-        for event in events:
+        events_list = list(events)
+        # Process topology events first so rename chains are established before
+        # any service name is resolved — prevents canonical_id splits when
+        # events carry post-rename names but arrive before the rename event.
+        topology_events = [e for e in events_list if e.get("kind") == "topology"]
+        other_events = [e for e in events_list if e.get("kind") != "topology"]
+        for event in topology_events:
+            self._process_event(event)
+        for event in other_events:
             self._process_event(event)
 
     def reconstruct_context(
