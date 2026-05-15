@@ -117,17 +117,32 @@ class Engine:
 
     def _handle_topology(self, event: Event, ts: datetime) -> None:
         change = event.get("change", "")
+        # Support both canonical field names and the generator's from_/to convention
+        from_name = event.get("old_name") or event.get("from_", "")
+        to_name = event.get("new_name") or event.get("to", "")
+
         if change == "rename":
-            old_name = event.get("old_name", "")
-            new_name = event.get("new_name", "")
-            if old_name and new_name:
-                cid = self.topology.register_rename(old_name, new_name, ts)
-                self.graph.upsert_service(cid, new_name)
-        elif change == "add":
-            name = event.get("service") or event.get("new_name", "")
+            if from_name and to_name:
+                cid = self.topology.register_rename(from_name, to_name, ts)
+                self.graph.upsert_service(cid, to_name)
+        elif change in ("add",):
+            name = event.get("service") or to_name
             if name:
                 cid = self.topology.register_service(name)
                 self.graph.upsert_service(cid, name)
+        elif change == "dep_add":
+            # from_ depends on to (caller → callee)
+            if from_name and to_name:
+                caller_cid = self.topology.resolve(from_name)
+                callee_cid = self.topology.resolve(to_name)
+                self.graph.upsert_service(caller_cid, from_name)
+                self.graph.upsert_service(callee_cid, to_name)
+                evidence = event.get("id", f"topology-dep-{from_name}-{to_name}")
+                self.graph.upsert_depends_on(caller_cid, callee_cid, evidence, ts)
+        elif change == "dep_remove":
+            # Mark the edge as closed — graph supports valid_to via edge metadata
+            # For now we leave existing edges (closed edges reduce but don't invalidate)
+            pass
 
     def _handle_deploy(self, event: Dict[str, Any], canonical_id: str, ts: datetime) -> None:
         version = event.get("version", "unknown")
