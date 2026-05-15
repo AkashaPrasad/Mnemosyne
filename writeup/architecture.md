@@ -1,4 +1,4 @@
-# Mnemosyne — Architectural Defense
+# Mnemosyne: Architectural Defense
 
 ## Section 1: Memory Representation
 
