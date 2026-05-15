@@ -141,7 +141,8 @@ class Engine:
         ts: datetime,
         event_id: str,
     ) -> None:
-        incident_id = event.get("id", event_id)
+        # Prefer the semantic incident_id field over the store-assigned event UUID
+        incident_id = event.get("incident_id") or event.get("id", event_id)
         severity = event.get("severity", "P2")
         self.graph.open_incident(incident_id, canonical_id, ts, severity)
         self._open_incidents[incident_id] = (canonical_id, ts, event_id)
