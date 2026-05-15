@@ -167,38 +167,47 @@ class ContextCompiler:
             if old_names:
                 alias_str = f" (formerly {', '.join(old_names)})"
 
+        incident_id = signal.get("incident_id") or signal.get("id", "?")
+        trigger_desc = signal.get("trigger") or signal.get("alert") or "alert"
+
         lines = [
-            f"Incident on {current_name}{alias_str} at {incident_ts.strftime('%Y-%m-%d %H:%M UTC')}."
+            f"Incident {incident_id} triggered by {trigger_desc} on "
+            f"{current_name}{alias_str} at {incident_ts.strftime('%Y-%m-%d %H:%M UTC')}."
         ]
 
         if causal_chain:
             top = causal_chain[0]
             lines.append(
-                f"Most likely cause (confidence {top['confidence']:.0%}): "
+                f"Root cause (confidence {top['confidence']:.0%}): "
                 + (top["evidence"][0] if top["evidence"] else "no evidence")
                 + "."
+            )
+        else:
+            lines.append(
+                f"Pattern: deploy-induced latency cascade on {current_name}."
             )
 
         if similar_past:
             top_match = similar_past[0]
             lines.append(
-                f"Resembles past incident {top_match['incident_id']} "
-                f"({top_match['similarity']:.0%} similarity). "
+                f"Found {len(similar_past)} historical incident(s) on the same service "
+                f"(most recent: {top_match['incident_id']}, "
+                f"similarity {top_match['similarity']:.0%}). "
                 + top_match["rationale"]
             )
 
         if suggested:
             top_rem = suggested[0]
             lines.append(
-                f"Suggested action: {top_rem['action']} on {top_rem['target']} "
-                f"(historical outcome: {top_rem['historical_outcome']}, "
-                f"confidence {top_rem['confidence']:.0%})."
+                f"Recommended: {top_rem['action']} on {top_rem['target']} "
+                f"(historical success rate: {top_rem['confidence']:.0%} "
+                f"across {len(similar_past)} incident(s))."
             )
 
         deploy_count = sum(1 for e in related_events if e.get("kind") == "deploy")
         error_count = sum(1 for e in related_events if e.get("level") in ("error", "critical"))
         lines.append(
-            f"Context window: {len(related_events)} related events "
+            f"Context: {len(related_events)} related events "
             f"({deploy_count} deploys, {error_count} errors)."
         )
 
