@@ -41,17 +41,35 @@ class TopologyTracker:
 
         cid = self._name_to_canonical[old_name]
 
+        # If new_name was already registered independently (canonical split caused by
+        # events arriving with post-rename names before the rename event is processed),
+        # merge the empty cid for old_name INTO the established cid for new_name.
+        if new_name in self._name_to_canonical:
+            existing_cid = self._name_to_canonical[new_name]
+            if existing_cid != cid:
+                # Redirect all names from the thin `cid` to the established `existing_cid`
+                for name in list(self._canonical_to_names.get(cid, set())):
+                    self._name_to_canonical[name] = existing_cid
+                    self._canonical_to_names.setdefault(existing_cid, set()).add(name)
+                if cid in self._rename_history:
+                    self._rename_history.setdefault(existing_cid, []).extend(
+                        self._rename_history.pop(cid)
+                    )
+                self._canonical_to_names.pop(cid, None)
+                cid = existing_cid
+
         # Close the old name's validity window
-        history = self._rename_history[cid]
+        history = self._rename_history.setdefault(cid, [])
         for i, (n, vfrom, vto) in enumerate(history):
             if n == old_name and vto is None:
                 history[i] = (n, vfrom, ts)
                 break
 
-        # Register the new name under the same canonical_id
-        self._name_to_canonical[new_name] = cid
-        self._canonical_to_names[cid].add(new_name)
-        self._rename_history[cid].append((new_name, ts, None))
+        # Register the new name under the same canonical_id (may already be there)
+        if self._name_to_canonical.get(new_name) != cid:
+            self._name_to_canonical[new_name] = cid
+            self._canonical_to_names[cid].add(new_name)
+            self._rename_history[cid].append((new_name, ts, None))
 
         return cid
 
