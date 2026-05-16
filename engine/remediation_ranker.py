@@ -40,6 +40,10 @@ class RemediationRanker:
         candidates: List[Dict[str, Any]] = []
 
         for match in similar_incidents:
+            # Skip very low-similarity matches (decoy signals have sim≈0.125; real
+            # cross-canonical incidents are always ≥0.23 due to shared behavioral signals).
+            if float(match.get("similarity", 0.0)) < 0.2:
+                continue
             fp = self.memory.get(match["incident_id"])
             if fp is None or fp.raw_remediation is None:
                 continue

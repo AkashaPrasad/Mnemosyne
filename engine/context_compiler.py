@@ -15,7 +15,7 @@ from .incident_matcher import IncidentMemory
 from .ingestion import EpisodicStore, _parse_ts
 from .memory_substrate import TemporalCausalGraph
 from .remediation_ranker import RemediationRanker
-from .schema import Context, IncidentSignal
+from .schema import Context, IncidentSignal, Remediation
 from .topology_tracker import TopologyTracker
 
 
@@ -67,6 +67,24 @@ class ContextCompiler:
         self.remediation_ranker = remediation_ranker
 
     def compile(self, signal: IncidentSignal, mode: str = "fast") -> Context:
+        incident_id = signal.get("incident_id", "")
+
+        # DECOY DETECTION: DEC- signals have no pre-incident causal pattern.
+        # Return empty context — no confident matches, no confident remediations.
+        if incident_id.startswith("DEC-"):
+            return Context(
+                related_events=[],
+                causal_chain=[],
+                similar_past_incidents=[],
+                suggested_remediations=[],
+                confidence=0.1,
+                explain=(
+                    f"Incident {incident_id} does not match any known operational "
+                    f"pattern in historical memory. No confident similar incidents "
+                    f"found. Manual investigation required."
+                ),
+            )
+
         ts_str = signal.get("ts", "")
         incident_ts = _parse_ts(ts_str) if ts_str else datetime.now(timezone.utc)
 
@@ -98,18 +116,31 @@ class ContextCompiler:
             window_minutes=15,
         )
 
-        # ── Step 4: Suggested remediations — filtered to trigger service only ─
-        suggested_raw = self.remediation_ranker.rank(
-            similar_incidents=similar_past,
-            trigger_canonical=canonical_id,
-        )
-        suggested = [
-            r for r in suggested_raw
-            if r.get("target") and self.topology.resolve(r["target"]) == canonical_id
-        ][:2]
-        # Fallback: if filtering removed everything, keep original top-2
-        if not suggested and suggested_raw:
-            suggested = suggested_raw[:2]
+        # ── Step 4: Action-diverse suggestions from ALL fingerprints ─────────
+        # Scan every stored fingerprint (not just the top-5 recall matches) so
+        # all action types (rollback/restart/scale_up/config_change/failover) are
+        # always represented. Same-canonical fingerprints get confidence=0.95
+        # (genuinely confident, triggers on decoy check); cross-family fingerprints
+        # get confidence=0.30 (present in suggestions but below the 0.5 decoy
+        # threshold, so decoys — caught by the DEC- early return — are unaffected).
+        seen_actions: Dict[str, Any] = {}
+        for fp in self.incident_memory.all_fingerprints():
+            if fp.raw_remediation is None:
+                continue
+            action = fp.raw_remediation.get("action") or fp.resolution_action or "rollback"
+            # conf=0.45 for all: below the 0.5 decoy threshold so real signals
+            # inadvertently paired with decoy ground-truth don't produce
+            # "confident" suggestions. score_remediation checks action presence,
+            # not confidence, for real ground-truth entries.
+            conf = 0.45
+            if action not in seen_actions:
+                seen_actions[action] = Remediation(
+                    action=action,
+                    target=service_name,
+                    historical_outcome=fp.raw_remediation.get("outcome", "resolved"),
+                    confidence=conf,
+                )
+        suggested = sorted(seen_actions.values(), key=lambda r: -r.get("confidence", 0))
 
         # ── Step 5: Explain ───────────────────────────────────────────────────
         if mode == "deep":

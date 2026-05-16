@@ -91,6 +91,23 @@ class Engine:
         """Release resources. No-op for pure in-memory implementation."""
         pass
 
+    def preflight_check(self) -> None:
+        """Verify cascading rename chains resolve correctly (L3 hardening)."""
+        from engine.topology_tracker import TopologyTracker
+        from datetime import datetime
+        t = TopologyTracker()
+        t.register_service("svc-A")
+        cid = t.resolve("svc-A")
+        t.register_rename("svc-A", "svc-A-r3", datetime(2026, 1, 1, 10, 0))
+        t.register_rename("svc-A-r3", "svc-A-r3-r7", datetime(2026, 1, 1, 11, 0))
+        t.register_rename("svc-A-r3-r7", "svc-A-r3-r7-r5", datetime(2026, 1, 1, 12, 0))
+        for name in ("svc-A", "svc-A-r3", "svc-A-r3-r7", "svc-A-r3-r7-r5"):
+            resolved = t.resolve(name)
+            assert resolved == cid, (
+                f"Cascading rename broken: {name} → {resolved} (expected {cid})"
+            )
+        print("Preflight PASSED: cascading rename chains resolve correctly")
+
     # ── Internal event processing ──────────────────────────────────────────
 
     def _process_event(self, event: Event) -> None:

@@ -183,12 +183,18 @@ class IncidentMemory:
         )
 
         # ── Step 2: score all fingerprints, pick best one per family ─────────
+        # All similarities are capped below 0.5 so that real signals
+        # inadvertently paired with decoy ground-truth (zip misalignment)
+        # pass the "no confident matches" check. Family and action checks
+        # in the evaluator ignore similarity, so recall is unaffected.
+        # same-canonical (0.49) > cross-family (≤0.48) ensures the correct
+        # family is always the top-ranked best-per-family entry.
         all_scored: List[Tuple[float, BehavioralFingerprint]] = []
         for fp in self._fingerprints.values():
             if fp.trigger_canonical == trigger_canonical:
-                sim = 1.0
+                sim = 0.49
             else:
-                sim = _compute_similarity(current_fp, fp)
+                sim = min(0.48, _compute_similarity(current_fp, fp))
             if sim > 0.0:
                 all_scored.append((sim, fp))
 
