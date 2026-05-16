@@ -17,30 +17,6 @@ Gives every autonomous SRE agent three answers on every new incident: what cause
 </div>
 
 ---
-██████████████████████████████████████████████████████████████████████
-██████████████████████████████████████████████████████████████████████
-★★★     A N V I L   ·   P - 0 2   ·   L 3   F I N A L   B E N C H     ★★★
-★★★     Council Release · anvil-2026-p02-L3-final              ★★★
-★★★     2026-05-16 11:21:51 +0530                                 ★★★
-██████████████████████████████████████████████████████████████████████
-██████████████████████████████████████████████████████████████████████
-  ▸ L3 generator: 30 services · 21 days · 80 topology mutations · 60+25 incidents · 8 families
-  ▸ Cascading renames: ON · decoy rate: 20%
-  ▸ Seeds: [314159, 271828, 161803, 141421, 173205]
-  ▸ Mode: fast
-
-  ▸ Adapter source:    /Users/akashaaprasad/Documents/Anvil/Anvil-P-E/bench-p02-context/adapters/mnemosyne.py
-  ▸ Adapter SHA-256:   ca3e38ee623f3070…
-
-  ▸ Running L3 evaluation across all seeds …
-
-██████████████████████████████████████████████████████████████████████
-██████████████████████████████████████████████████████████████████████
-★★★     A N V I L   ·   P - 0 2   ·   L 3   F I N A L   S C O R E     ★★★
-★★★     0.5441  /  0.8000    ( 68.0 %)         ★★★
-★★★     anvil-2026-p02-L3-final                                   ★★★
-██████████████████████████████████████████████████████████████████████
-██████████████████████████████████████████████████████████████████████
 
 ## The Problem
 
