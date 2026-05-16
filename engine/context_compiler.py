@@ -284,7 +284,7 @@ class ContextCompiler:
         current_name = self.topology.current_name(canonical_id) or service_name
         former_names = [a for a in aliases if a != current_name]
         rename_note = (
-            f" (formerly known as {', '.join(former_names)})" if former_names else ""
+            f" (formerly: {', '.join(former_names)})" if former_names else ""
         )
 
         parts = []
@@ -338,22 +338,14 @@ class ContextCompiler:
         if suggested:
             rem = suggested[0]
             conf = rem.get("confidence", 0)
+            deploy_version = deploy_ev.get("version", "") if deploy_ev else ""
+            version_str = f" from {deploy_version}" if deploy_version else ""
             parts.append(
                 f"Recommended action: {rem.get('action', 'rollback')} "
-                f"{rem.get('target', current_name)} to prior version "
+                f"{rem.get('target', current_name)}{version_str} to prior version "
                 f"(confidence: {conf:.0%}, "
                 f"based on {len(similar_past)} historical resolution(s))."
             )
-
-        deploy_count = sum(1 for e in related_events if e.get("kind") == "deploy")
-        error_count = sum(
-            1 for e in related_events
-            if e.get("level") in ("error", "critical")
-        )
-        parts.append(
-            f"Context: {len(related_events)} related events "
-            f"({deploy_count} deploy(s), {error_count} error(s))."
-        )
 
         return " ".join(parts)
 
